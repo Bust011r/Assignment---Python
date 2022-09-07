@@ -35,8 +35,9 @@ async def read_file(file):
     return lines
 
 
-async def write_file(resp):
+async def write_file(resp, dest_path):
     dl = 0
+    total_length = int(resp.headers.get('content-length'))
     f = await aiofiles.open(dest_path, mode='wb')
     async for data in resp.content.iter_chunked(1024):
         dl += len(data)
@@ -45,7 +46,6 @@ async def write_file(resp):
         sys.stdout.write("\r[%s%s]" % (
             '=' * done, ' ' * (50-done)))
         sys.stdout.flush()
-    print(f'download of {file_name} completed')
     await f.close()
 
 
@@ -58,21 +58,26 @@ async def download_images(urls, path):
             while True:
                 try:
                     async with session.get(url) as resp:
-                        if resp.status == 200:
-                            total_length = int(
-                                resp.headers.get('content-length'))
+                        #resp.raise_for_status()
+                        if resp.ok:
+
                             file_name = url.rsplit('/', 1)[1]
                             dest_path = os.path.join(path, file_name)
+
                             # write only if not exists
                             if not os.path.exists(dest_path):
-                                await write_file(resp)
+                                await write_file(resp, dest_path)
+                                print(f'download of {file_name} completed')
+
                             else:
                                 print(f'{file_name} yet in directory selected')
+                        
                         else:
+                            print(f'error code {resp.status}')
                             if resp.status == 404:
                                 # do something??
                                 pass
-                               
+
                         break
                 # handle if the connection itself has got in trouble
                 except aiohttp.ClientConnectorError as e:
@@ -85,7 +90,7 @@ async def download_images(urls, path):
 
 async def main():
     if len(sys.argv) == 2:
-        path = 'images'  # sys.argv[1]
+        path = sys.argv[1]
         if os.path.exists(path):
             urls = await read_file('input.txt')
             await download_images(urls, path)
