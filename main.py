@@ -37,7 +37,6 @@ async def read_file(file):
     except:
         print(f'{file} not finded')
         exit()
-
     return lines
 
 
@@ -68,17 +67,19 @@ async def request(session, url, path):
         else:
             print(f'error code {resp.status}')
             if resp.status == 404:
-                # do something??
+                #do something when error 404??
                 pass
+            #other error aren't mentioned
 
 
 async def download_images(urls, path):
     async with aiohttp.ClientSession() as session:
         for url in urls:
             start_time = time.time()
-            # try while connection_timeout
+            # try while not connection_timeout
             while True:
                 try:
+                    #do get request
                     await request(session, url, path)
                     break
                 # handle if the connection itself has got in trouble
